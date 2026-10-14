@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Monte Carlo Approximation of Pi using MPI | Salih Uyar</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<nav class="nav" id="nav">
+    <div class="container">
+        <a href="../index.html" class="nav-brand">Salih Uyar</a>
+        <ul class="nav-links">
+            <li><a href="../index.html#about">About</a></li>
+            <li><a href="../index.html#blog">Blog</a></li>
+            <li><a href="../index.html#contact">Contact</a></li>
+        </ul>
+    </div>
+</nav>
+
+<article class="post">
+
+<a href="../index.html#blog" class="post-back">← Back to Blog</a>
+
+<h1>Parallel Monte Carlo Approximation of Pi using MPI</h1>
+
+<p class="date">July 2025</p>
+
+<hr>
+
+<section>
+<h2>Introduction</h2>
+
+<p>
+One of the simplest ways to approximate π is the Monte Carlo method.
+The idea is to randomly generate points inside a square and count how
+many of them fall inside an inscribed circle.
+</p>
+
+<p>
+This project is interesting from a High-Performance Computing perspective
+because each random point can be generated independently. This makes the
+problem embarrassingly parallel, meaning that the workload can be divided
+among multiple processes with very little communication overhead.
+</p>
+
+<p>
+In this project, I implemented both a serial and an MPI-based parallel
+version in C. The goal was to compare execution times, measure scalability,
+and evaluate the performance benefits of parallel computation.
+</p>
+</section>
+
+<section>
+
+<h2>Mathematical Background</h2>
+
+<p>
+The Monte Carlo method estimates π using random sampling. Instead of
+calculating π directly through geometry, we generate a large number of
+random points inside a square and determine how many of them fall inside
+an inscribed circle.
+</p>
+
+<p>
+The following diagram illustrates the underlying idea:
+</p>
+
+<div style="text-align:center; margin:30px 0;">
+    <img
+        src="../images/monte.png"
+        alt="Monte Carlo Pi Approximation"
+        style="max-width:100%; border-radius:8px;">
+
+    <p style="font-size:14px; color:gray; margin-top:10px;">
+        Figure 1: Monte Carlo approximation of π.
+        Source:
+        <a target="_blank"
+           href="https://www.youtube.com/watch?v=lY4rSeX8IL4">
+           Original image
+        </a>
+    </p>
+</div>
+
+<p>
+The circle has radius 1 and is enclosed by a square with side length 2.
+Therefore:
+</p>
+
+<pre>
+Area(circle) = π × 1² = π
+
+Area(square) = 2 × 2 = 4
+</pre>
+
+<p>
+The ratio between both areas is:
+</p>
+
+<pre>
+Area(circle) / Area(square) = π / 4
+</pre>
+
+<p>
+If random points are distributed uniformly across the square, the
+fraction of points that fall inside the circle approximates the same
+ratio:
+</p>
+
+<pre>
+Points inside circle / Total points ≈ π / 4
+</pre>
+
+<p>
+Rearranging the equation gives:
+</p>
+
+<pre>
+π ≈ 4 × (Points inside circle / Total points)
+</pre>
+
+<p>
+As the number of generated points increases, the approximation converges
+towards the true value of π. This makes the Monte Carlo method a simple
+but effective example of probabilistic numerical computation and a good
+candidate for parallelization.
+</p>
+
+</section>
+
+<section>
+<h2>Serial Implementation</h2>
+
+<p>
+The serial implementation generates all random points on a single process
+and counts how many points fall inside the circle. This version serves as
+the baseline for evaluating the performance of the parallel implementation.
+</p>
+</section>
+
+<section>
+<h2>MPI Parallelization</h2>
+
+<p>
+The MPI version distributes the total number of random points across multiple
+processes. Each process computes its own local count of points inside the
+circle.
+</p>
+
+<p>
+After the local computations are finished, the partial results are combined
+using <code>MPI_Reduce</code>. The root process then computes the final
+approximation of π.
+</p>
+
+<pre>
+Total points
+     |
+     v
++-------------------+
+| Split among ranks |
++-------------------+
+     |
+     +------> Rank 0 computes local count
+     |
+     +------> Rank 1 computes local count
+     |
+     +------> Rank 2 computes local count
+     |
+     +------> Rank N computes local count
+     |
+     v
+MPI_Reduce sums all local counts
+     |
+     v
+Root process computes π
+</pre>
+</section>
+
+<section>
+<h2>Performance Metrics</h2>
+
+<p>
+To evaluate the parallel implementation, I measured runtime, computation
+time, reduction time, approximation error, speedup, and parallel efficiency.
+</p>
+
+<pre>
+Speedup(p) = T_serial / T_parallel(p)
+
+Efficiency(p) = Speedup(p) / p
+</pre>
+
+<p>
+Here, <code>p</code> is the number of MPI processes.
+</p>
+</section>
+
+<section>
+<h2>Experimental Setup</h2>
+
+<ul>
+    <li>Language: C</li>
+    <li>Parallel programming model: MPI</li>
+    <li>Number of random points: 100,000,000</li>
+    <li>Tested process counts: 1, 2, 4, and 8</li>
+    <li>Analysis: Python with pandas and matplotlib</li>
+</ul>
+</section>
+
+<section>
+
+<h2>Results</h2>
+
+<p>
+The benchmark results were written to a CSV file and analyzed using Python.
+The figures below show the runtime, speedup, and efficiency of the MPI
+implementation for different numbers of processes.
+</p>
+
+<h3>Runtime</h3>
+
+<div style="text-align:center; margin:30px 0;">
+    <img
+        src="../images/runtime.png"
+        alt="Runtime Plot"
+        style="max-width:100%; border-radius:8px;">
+</div>
+
+<p>
+As expected, the runtime decreases as more MPI processes participate in
+the computation.
+</p>
+
+<h3>Speedup</h3>
+
+<div style="text-align:center; margin:30px 0;">
+    <img
+        src="../images/speedup.png"
+        alt="Speedup Plot"
+        style="max-width:100%; border-radius:8px;">
+</div>
+
+<p>
+The speedup approaches the ideal scaling line, demonstrating that Monte
+Carlo simulation is highly parallelizable.
+</p>
+
+<h3>Efficiency</h3>
+
+<div style="text-align:center; margin:30px 0;">
+    <img
+        src="../images/efficiency.png"
+        alt="Efficiency Plot"
+        style="max-width:100%; border-radius:8px;">
+</div>
+
+<p>
+Efficiency decreases slightly as more processes are added due to
+communication overhead and synchronization costs, but remains relatively
+high because the workload is largely independent.
+</p>
+
+</section>
+<section>
+<h2>What I Implemented</h2>
+
+<ul>
+    <li>A serial Monte Carlo π approximation in C</li>
+    <li>An MPI-parallel version using multiple processes</li>
+    <li>Work distribution across MPI ranks</li>
+    <li>Result aggregation using <code>MPI_Reduce</code></li>
+    <li>Runtime measurement using <code>MPI_Wtime</code></li>
+    <li>A Bash script for automated benchmarking</li>
+    <li>A Python script for analyzing speedup and efficiency</li>
+</ul>
+</section>
+
+<section>
+<h2>What I Learned</h2>
+
+<ul>
+    <li>How to structure a simple MPI program</li>
+    <li>How to distribute independent work across processes</li>
+    <li>How collective communication works with <code>MPI_Reduce</code></li>
+    <li>How to measure runtime, speedup, and efficiency</li>
+    <li>Why embarrassingly parallel problems can scale efficiently</li>
+</ul>
+</section>
+
+<section>
+<h2>Source Code</h2>
+
+<a
+class="github-btn"
+target="_blank"
+href="https://github.com/salihuyar38/monte-carlo-pi-mpi">
+View on GitHub
+</a>
+
+</section>
+
+</article>
+
+<footer class="footer">
+    <div class="container">
+        <p>Copyright &copy; 2025 Salih Uyar</p>
+    </div>
+</footer>
+
+<script src="../js/main.js"></script>
+
+</body>
+</html>

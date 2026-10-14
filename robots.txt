@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://salihuyar38.github.io/personal-website/sitemap.xml
